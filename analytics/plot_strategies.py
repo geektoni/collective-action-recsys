@@ -7,6 +7,8 @@ import argparse
 import matplotlib.lines as mlines
 import os
 
+from analytics.utils import METHOD_DICTIONARY
+
 sns.set_theme(font_scale=1.0,
         style="ticks",
         rc={
@@ -126,14 +128,6 @@ def improve_legend(ax, custom_handles=[], additional_labels_to_remove=[], save_l
 
 if __name__ == "__main__":
 
-    METHOD_DICTIONARY = {
-        "low_risk_q1": r'\texttt{Low Risk}',
-        "top_ranker_q1": r'\texttt{Top Ranker}',
-        "random": r'\texttt{Random}',
-        "likes": r'\texttt{Likes}',
-        "tag": r'\texttt{Tag}',
-    }
-
     parser = argparse.ArgumentParser()
     parser.add_argument("file", type=str)
     parser.add_argument("--collective", type=float)
@@ -179,11 +173,33 @@ if __name__ == "__main__":
 
     improve_legend(ax, save_legend=True)
 
-    ax.set_ylim(1e-5, 1.05)
+    ax.set_ylim(1e-5, 1.001)
     ax.grid(axis='y')
     g.set(yscale="log")
     ax.set_xlabel(r'$\lambda$')
     ax.set_ylabel(r'Empirical Expected Risk')
+    plt.savefig(f"00_strategies_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
+    plt.clf()
 
-    fig.savefig(f"00_strategies_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
-    #plt.show()
+    fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)
+    g = sns.barplot(
+        data=dfb[ condition_1 | condition_2 ],
+        y="fraction_flagged",
+        hue="parsed_strategy",
+        errorbar="sd",
+        hue_order = [r'\texttt{Low Risk}', r'\texttt{Likes}', r'\texttt{Top Ranker}', r'\texttt{Random}',
+                     r'\texttt{Tag} ($g=39$)',
+                     r'\texttt{Tag} ($g=67$)',
+                     r'\texttt{Tag} ($g=34$)'],
+        ax=ax
+    )
+
+    #improve_legend(ax, save_legend=True)
+
+    #ax.set_ylim(1e-5, 1.001)
+    ax.grid(axis='y')
+    #g.set(yscale="log")
+    #ax.set_xlabel(r'$\lambda$')
+    ax.set_ylabel(r'\% of reported items')
+
+    fig.savefig(f"00_reported_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
