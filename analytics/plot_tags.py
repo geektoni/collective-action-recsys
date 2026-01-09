@@ -20,8 +20,40 @@ sns.set_theme(font_scale=1.0,
         "font.family": "serif",
     })
 
-# Group by run_id to apply rescaling per cross-validation run
+def improve_legend(ax, custom_handles=[], additional_labels_to_remove=[], save_legend=False, legend_title="classic_legend"):
+    # Get the current legend and remove it
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend().remove()
 
+    additional_labels_to_remove += ["Risk Control", "Strategy", "epoch"]
+
+    # Keep only unique legend items (avoid redundant hue/style elements)
+    new_labels = [label for label in labels if label not in additional_labels_to_remove]  # Remove duplicates while preserving order
+    new_handles = [handles[labels.index(label)] for label in new_labels]
+
+    if len(custom_handles) > 0:
+        for cstmlabel, cstmhandle in custom_handles:
+            new_labels += [cstmlabel]
+            new_handles += [cstmhandle]
+    
+    # Save legend separately to disk if neede
+    if save_legend:
+        legend_fig = plt.figure(figsize=(len(new_labels) * 1, 0.4))  # Width based on number of labels
+        legend_ax = legend_fig.add_subplot(111)
+        legend_ax.axis("off")
+        _ = legend_ax.legend(
+            new_handles,
+            new_labels,
+            loc="center",
+            ncol=len(labels),  # Put all items in one row
+            frameon=True,
+            fontsize="large"
+        )
+        legend_fig.savefig(f"{legend_title}.pdf", bbox_inches='tight', pad_inches=0, format="pdf")
+    
+    ax.grid(axis='y')
+
+# Group by run_id to apply rescaling per cross-validation run
 def rescale_group_avg_tag(
     df: pd.DataFrame,
     tag_col: str = "tag",
@@ -162,23 +194,7 @@ if __name__ == "__main__":
     parser.add_argument("--fraction", type=float)
     args = parser.parse_args()
 
-    df = load_csv_files_to_dataframe_tag(args.file, rescale=True, n_jobs=8)
-
-    df["conformal_score"] = df["conformal_score"].fillna("None")
-    df["conformal_score"] = df.conformal_score.apply(lambda x : "Similarity" if x=="weights" else x)
-    df["conformal_method"] = df["conformal_method"].fillna("None")
-
-    df["Method"] = df["Method"].apply(lambda x: "None" if x == "Classic" else x)
-    df["Method"] = df["Method"].apply(lambda x: "Pre-train" if x == "Classic (masked)" else x)
-    df["Strategy"] = df.apply(lambda x: f"{x.conformal_method.capitalize()}" if x.Method == "Conformal" else x.Method, axis=1)
-    df["Strategy"] = df["Strategy"].apply(lambda x: r"\textsc{Remove}" if x=="Remove" else r"\textsc{Replace} (Ours)")
-    df["Risk Control"] = df.apply(lambda x: filter_name(x) if x.Method == "Conformal" else "None", axis=1)
-
-    df = df[df["Risk Control"] != r'\textsc{Ncf}']
-
-    order_methods = [r'\textsc{Lightgcl}', r'\textsc{Gformer}', r'\textsc{Siren}', r'\textsc{Sigformer}']
-
-    max_alpha = df["alpha"].max()
+    df = load_csv_files_to_dataframe_tag(args.file, rescale=True, n_jobs=4)
 
     df.rename(
         columns={"alpha": X_AXIS_TEXT,
@@ -187,11 +203,12 @@ if __name__ == "__main__":
         inplace=True
     )
 
-    df["Report Strategy"].fillna("None", inplace=True)
-    df["parsed_strategy"] = df["Report Strategy"].apply(lambda x: METHOD_DICTIONARY.get(x))
-    df["parsed_strategy"] = df.apply(lambda x: x.parsed_strategy+f" ($g={x.target_tag}$)" if x.parsed_strategy == r'\texttt{Tag}' else x.parsed_strategy, axis=1)
+    #df["Report Strategy"].fillna("None", inplace=True)
+    #df["parsed_strategy"] = df["Report Strategy"].apply(lambda x: METHOD_DICTIONARY.get(x))
+    #df["parsed_strategy"] = df.apply(lambda x: x.parsed_strategy+f" ($g={x.target_tag}$)" if x.parsed_strategy == r'\texttt{Tag}' else x.parsed_strategy, axis=1)
 
-    plot_df = df[df["tag"].isin([54, 23])].copy()
+    plot_df = df[df["tag"].isin([54, 23])][["Report Strategy", 'Report Fraction', "tag", X_AXIS_TEXT, "avg_topk_rescaled", "Collective"]]
+    del df
     plot_df['Group'] = plot_df['tag'].astype(str)
 
     # Condition 1: picks only elements of one collective
@@ -206,25 +223,43 @@ if __name__ == "__main__":
     condition_3 = (plot_df[X_AXIS_TEXT] == 12.5)
 
     # Condition 4: picks a collective
-    condition_4 = df.Collective.isin([0.01])
+    #condition_4 = df.Collective.isin([0.01])
 
-    print(plot_df[(condition_1 | condition_2)])
+    plot_df = plot_df[(condition_1 | condition_2) & (plot_df["Report Strategy"] == "low_risk_q1") & plot_df[X_AXIS_TEXT].isin([12.5, 25, 50, 75])]
 
-    g = sns.relplot(
-        data=plot_df[(condition_1 | condition_2)],
+    FIGURE_SIZE = (3.2,2)
+    fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)
+    g = sns.barplot(
+        data=plot_df[plot_df["tag"].isin([54])],
         x=X_AXIS_TEXT,
         y="avg_topk_rescaled",
-        hue="parsed_strategy",
-        col="Collective",
-        style="Group",
-        markers=True,
-        dashes=False,
-        height=2.5,
-        aspect=1.5,
-        kind="line",
+        hue="Collective",
+        #style="Group",
+        errorbar="sd",
+        err_kws={"linewidth": 1.2},
+        capsize=.4,
+        ax=ax
     )
+    improve_legend(ax, save_legend=True, legend_title="02_tags_legend")
+    ax.set_ylabel(r"Reduction", fontsize="small")
+    ax.set_xlabel(X_AXIS_TEXT, fontsize="small", loc="center")
+    fig.savefig(f"02_tags_54.pdf", format="pdf", bbox_inches='tight')
+    plt.clf()
 
-    for ax in g.axes.flat:
-        ax.set_ylabel(r'Empirical Reduction (\%)')
-    
-    plt.show()
+    FIGURE_SIZE = (3.2,2)
+    fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)
+    g = sns.barplot(
+        data=plot_df[plot_df["tag"].isin([23])],
+        x=X_AXIS_TEXT,
+        y="avg_topk_rescaled",
+        hue="Collective",
+        #style="Group",
+        errorbar="sd",
+        err_kws={"linewidth": 1.2},
+        capsize=.4,
+        ax=ax
+    )
+    improve_legend(ax, save_legend=True, legend_title="02_tags_legend")
+    ax.set_ylabel(r"Reduction", fontsize="small")
+    ax.set_xlabel(X_AXIS_TEXT, fontsize="small", loc="center")
+    fig.savefig(f"02_tags_23.pdf", format="pdf", bbox_inches='tight')
