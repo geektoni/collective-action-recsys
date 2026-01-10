@@ -25,7 +25,7 @@ def improve_legend(ax, custom_handles=[], additional_labels_to_remove=[], save_l
     handles, labels = ax.get_legend_handles_labels()
     ax.legend().remove()
 
-    additional_labels_to_remove += ["Risk Control", "Strategy", "epoch"]
+    additional_labels_to_remove += ["Risk Control", "epoch"]
 
     # Keep only unique legend items (avoid redundant hue/style elements)
     new_labels = [label for label in labels if label not in additional_labels_to_remove]  # Remove duplicates while preserving order
@@ -38,7 +38,7 @@ def improve_legend(ax, custom_handles=[], additional_labels_to_remove=[], save_l
     
     # Save legend separately to disk if neede
     if save_legend:
-        legend_fig = plt.figure(figsize=(len(new_labels) * 1, 0.4))  # Width based on number of labels
+        legend_fig = plt.figure(figsize=(len(new_labels) * 0.7, 0.4))  # Width based on number of labels
         legend_ax = legend_fig.add_subplot(111)
         legend_ax.axis("off")
         _ = legend_ax.legend(
@@ -196,18 +196,19 @@ if __name__ == "__main__":
 
     df = load_csv_files_to_dataframe_tag(args.file, rescale=True, n_jobs=4)
 
+    # Invert the scale. Here 0 means no reduction, while 100% means removed all instances. 
+    df['avg_topk_rescaled'] = 100-df["avg_topk_rescaled"]
+
     df.rename(
         columns={"alpha": X_AXIS_TEXT,
                 "|S|": r"$|S_\lambda(U)|$",
-                "random_items": r"\# of replaced items"},
+                "random_items": r"\# of replaced items",
+                "Report Strategy": "Strategy",
+                "Collective": r'$\beta$'},
         inplace=True
     )
 
-    #df["Report Strategy"].fillna("None", inplace=True)
-    #df["parsed_strategy"] = df["Report Strategy"].apply(lambda x: METHOD_DICTIONARY.get(x))
-    #df["parsed_strategy"] = df.apply(lambda x: x.parsed_strategy+f" ($g={x.target_tag}$)" if x.parsed_strategy == r'\texttt{Tag}' else x.parsed_strategy, axis=1)
-
-    plot_df = df[df["tag"].isin([54, 23])][["Report Strategy", 'Report Fraction', "tag", X_AXIS_TEXT, "avg_topk_rescaled", "Collective"]]
+    plot_df = df[df["tag"].isin([39,34])][['Strategy', 'Report Fraction', "tag", X_AXIS_TEXT, "avg_topk_rescaled", r'$\beta$', "target_tag"]]
     del df
     plot_df['Group'] = plot_df['tag'].astype(str)
 
@@ -215,51 +216,33 @@ if __name__ == "__main__":
     condition_1 = (plot_df['Report Fraction'].isin([args.fraction]))
 
     # Condition 2: picks tags
-    condition_2_1 = ((plot_df['Report Fraction'] == 0.25) & (plot_df['Report Strategy'] == "tag"))
-    condition_2_2 = ((plot_df['Report Fraction'] == 0.25) & (plot_df['Report Strategy'] == "None") & plot_df.Collective.isin([0]))
-    condition_2 = (condition_2_1)
-    
-    # Condition 3: picks alpha
-    condition_3 = (plot_df[X_AXIS_TEXT] == 12.5)
+    condition_2_1 = ((plot_df['Report Fraction'] == 0.25) & (plot_df['Strategy'] == "tag"))
+    #condition_2_2 = ((plot_df['Report Fraction'] == 0.25) & (plot_df['Strategy'] == "None") & plot_df.Collective.isin([0]))
+    condition_2 = (condition_2_1) 
 
-    # Condition 4: picks a collective
-    #condition_4 = df.Collective.isin([0.01])
+    condition_5 = (plot_df['Strategy'] == "low_risk_q1") | (plot_df['Strategy'] == "tag") & (plot_df["target_tag"] == "39")
+    condition_6 = (plot_df['Strategy'] == "random")
+    condition_7 = ((plot_df['Strategy'] == "tag") & (plot_df["target_tag"].isin(["34"])))
 
-    plot_df = plot_df[(condition_1 | condition_2) & (plot_df["Report Strategy"] == "low_risk_q1") & plot_df[X_AXIS_TEXT].isin([12.5, 25, 50, 75])]
+    plot_df = plot_df[(condition_1 | condition_2) & (condition_7 | condition_6)]
 
-    FIGURE_SIZE = (3.2,2)
-    fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)
-    g = sns.barplot(
-        data=plot_df[plot_df["tag"].isin([54])],
-        x=X_AXIS_TEXT,
-        y="avg_topk_rescaled",
-        hue="Collective",
-        #style="Group",
-        errorbar="sd",
-        err_kws={"linewidth": 1.2},
-        capsize=.4,
-        ax=ax
-    )
-    improve_legend(ax, save_legend=True, legend_title="02_tags_legend")
-    ax.set_ylabel(r"Reduction", fontsize="small")
-    ax.set_xlabel(X_AXIS_TEXT, fontsize="small", loc="center")
-    fig.savefig(f"02_tags_54.pdf", format="pdf", bbox_inches='tight')
-    plt.clf()
+    plot_df["Strategy"] = plot_df["Strategy"].apply(lambda x: METHOD_DICTIONARY.get(x))
+    plot_df["Strategy"] = plot_df.apply(lambda x: x.Strategy+f" ($g={x.target_tag}$)" if x.Strategy == r'\texttt{Tag}' else x.Strategy, axis=1)
 
     FIGURE_SIZE = (3.2,2)
     fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)
-    g = sns.barplot(
-        data=plot_df[plot_df["tag"].isin([23])],
+    g = sns.lineplot(
+        data=plot_df[plot_df["tag"].isin([34])],
         x=X_AXIS_TEXT,
         y="avg_topk_rescaled",
-        hue="Collective",
-        #style="Group",
-        errorbar="sd",
-        err_kws={"linewidth": 1.2},
-        capsize=.4,
+        hue=r'$\beta$',
+        style='Strategy',
+        markers=True,
+        errorbar="ci",
+        palette=sns.color_palette("crest", as_cmap=True),
         ax=ax
     )
     improve_legend(ax, save_legend=True, legend_title="02_tags_legend")
-    ax.set_ylabel(r"Reduction", fontsize="small")
+    ax.set_ylabel(r"Exposure Reduction (\%)", fontsize="small")
     ax.set_xlabel(X_AXIS_TEXT, fontsize="small", loc="center")
-    fig.savefig(f"02_tags_23.pdf", format="pdf", bbox_inches='tight')
+    fig.savefig(f"02_tags_34_classic.pdf", format="pdf", bbox_inches='tight')    
