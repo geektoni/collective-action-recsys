@@ -218,7 +218,7 @@ if __name__ == "__main__":
     # Condition 2: picks tags
     condition_2_1 = ((plot_df['Report Fraction'] == 0.25) & (plot_df['Strategy'] == "tag"))
     condition_2_2 = ((plot_df['Report Fraction'] == 0.25) & (plot_df['Strategy'] == "None") & plot_df[r'$\beta$'].isin([0]))
-    condition_2 = (condition_2_1 | condition_2_2) 
+    condition_2 = (condition_2_1) 
 
     condition_5 = (plot_df['Strategy'] == "low_risk_q1") | (plot_df['Strategy'] == "tag") & (plot_df["target_tag"] == "39")
     condition_6 = (plot_df['Strategy'] == "random")
@@ -229,50 +229,67 @@ if __name__ == "__main__":
     plot_df["Strategy"] = plot_df["Strategy"].apply(lambda x: METHOD_DICTIONARY.get(x))
     plot_df["Strategy"] = plot_df.apply(lambda x: x.Strategy+f" ($g={x.target_tag}$)" if x.Strategy == r'\texttt{Tag}' else x.Strategy, axis=1)
 
-    metrics = ["avg_topk_rescaled"]
-    keys = ["run_id", X_AXIS_TEXT]  # add other columns if needed (e.g., your x-axis reduction column)
+    # --- Paired difference: Random vs Tag (g=34), matched on run_id, beta, x, tag ---
+    metric = "avg_topk_rescaled"
+    join_keys = ["run_id", r'$\beta$', X_AXIS_TEXT, "tag"]
 
-    # baseline condition ("None" strategy rows)
-    baseline_cond = (
-        (plot_df["Report Fraction"] == 0.25)
-        & (plot_df["Strategy"] == "None")
-        & (plot_df[r'$\beta$'].isin([0]))
-    )
+    random_label = r'\texttt{Random}'
+    tag_label    = r'\texttt{Tag} ($g=34$)'  # must match the label produced by your formatting
 
-    baseline = (
-        plot_df.loc[baseline_cond, keys + metrics]
-        .groupby(keys, as_index=False)
+    # Aggregate within each cell just in case you have duplicates (safer than assuming uniqueness)
+    random_df = (
+        plot_df.loc[plot_df["Strategy"].eq(random_label), join_keys + [metric]]
+        .groupby(join_keys, as_index=False)
         .mean(numeric_only=True)
-        .rename(columns={m: f"{m}__none" for m in metrics})
+        .rename(columns={metric: f"{metric}__random"})
     )
 
-    plot_df = plot_df.merge(baseline, on=keys, how="left")
+    tag_df = (
+        plot_df.loc[plot_df["Strategy"].eq(tag_label), join_keys + [metric]]
+        .groupby(join_keys, as_index=False)
+        .mean(numeric_only=True)
+        .rename(columns={metric: f"{metric}__tag"})
+    )
 
-    # 3) Compute per-metric differences for strategies != "None"
-    mask = plot_df["Strategy"].ne("None")
-    for m in metrics:
-        base_col = f"{m}__none"
-        diff_col = f"difference__{m}"
-        plot_df[diff_col] = np.where(
-            mask & plot_df[base_col].notna(),
-            (1/plot_df[r'$\beta$'])*(plot_df[m] - plot_df[base_col]),
-            np.nan
-        )
+    # Inner join keeps only matched pairs
+    diff_df = random_df.merge(tag_df, on=join_keys, how="inner")
 
-    FIGURE_SIZE = (3.2,2)
-    fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)
-    g = sns.lineplot(
-        data=plot_df[plot_df["tag"].isin([34])],
+    # Direction: Tag - Random (positive means Tag has higher exposure reduction than Random)
+    diff_df["difference__avg_topk_rescaled"] = (
+        diff_df[f"{metric}__random"] - diff_df[f"{metric}__tag"]
+    )
+
+    FIGURE_SIZE = (4.2, 2)
+    fig, ax = plt.subplots(1, 1, figsize=FIGURE_SIZE)
+
+    sns.lineplot(
+        data=diff_df,
         x=X_AXIS_TEXT,
-        y="avg_topk_rescaled",
+        y="difference__avg_topk_rescaled",
         hue=r'$\beta$',
-        style='Strategy',
-        markers=True,
+        style=r'$\beta$',
+        estimator="mean",
         errorbar="ci",
+        markers=True,
+        linewidth=1.5,
         palette=sns.color_palette("crest", as_cmap=True),
-        ax=ax
+        ax=ax,
     )
-    improve_legend(ax, save_legend=True, legend_title="02_tags_legend")
-    ax.set_ylabel(r"Exposure Reduction (\%)", fontsize="small")
-    ax.set_xlabel(X_AXIS_TEXT, fontsize="small", loc="center")
+
+    ax.grid(axis='y')
+    ax.legend(
+        title=r'$\beta$',
+        fontsize="small",
+        title_fontsize="small"
+    )
+
+    ax.axhline(0, linestyle="--", linewidth=1, color='k')
+
+    ax.set_ylabel(
+        r"$\Delta\mathrm{Exposure}$ (\%)",
+        fontsize="small",
+    )
+    ax.set_xlabel(X_AXIS_TEXT, fontsize="small")
+
+    #improve_legend(ax, save_legend=True, legend_title="02_tags_diff_legend")
     fig.savefig(f"02_tags_34_classic.pdf", format="pdf", bbox_inches='tight')    
