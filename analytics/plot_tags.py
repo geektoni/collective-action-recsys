@@ -208,7 +208,7 @@ if __name__ == "__main__":
         inplace=True
     )
 
-    plot_df = df[df["tag"].isin([39,34])][['Strategy', 'Report Fraction', "tag", X_AXIS_TEXT, "avg_topk_rescaled", r'$\beta$', "target_tag"]]
+    plot_df = df[df["tag"].isin([39,34])][['run_id', 'Strategy', 'Report Fraction', "tag", X_AXIS_TEXT, "avg_topk_rescaled", r'$\beta$', "target_tag"]]
     del df
     plot_df['Group'] = plot_df['tag'].astype(str)
 
@@ -217,8 +217,8 @@ if __name__ == "__main__":
 
     # Condition 2: picks tags
     condition_2_1 = ((plot_df['Report Fraction'] == 0.25) & (plot_df['Strategy'] == "tag"))
-    #condition_2_2 = ((plot_df['Report Fraction'] == 0.25) & (plot_df['Strategy'] == "None") & plot_df.Collective.isin([0]))
-    condition_2 = (condition_2_1) 
+    condition_2_2 = ((plot_df['Report Fraction'] == 0.25) & (plot_df['Strategy'] == "None") & plot_df[r'$\beta$'].isin([0]))
+    condition_2 = (condition_2_1 | condition_2_2) 
 
     condition_5 = (plot_df['Strategy'] == "low_risk_q1") | (plot_df['Strategy'] == "tag") & (plot_df["target_tag"] == "39")
     condition_6 = (plot_df['Strategy'] == "random")
@@ -228,6 +228,36 @@ if __name__ == "__main__":
 
     plot_df["Strategy"] = plot_df["Strategy"].apply(lambda x: METHOD_DICTIONARY.get(x))
     plot_df["Strategy"] = plot_df.apply(lambda x: x.Strategy+f" ($g={x.target_tag}$)" if x.Strategy == r'\texttt{Tag}' else x.Strategy, axis=1)
+
+    metrics = ["avg_topk_rescaled"]
+    keys = ["run_id", X_AXIS_TEXT]  # add other columns if needed (e.g., your x-axis reduction column)
+
+    # baseline condition ("None" strategy rows)
+    baseline_cond = (
+        (plot_df["Report Fraction"] == 0.25)
+        & (plot_df["Strategy"] == "None")
+        & (plot_df[r'$\beta$'].isin([0]))
+    )
+
+    baseline = (
+        plot_df.loc[baseline_cond, keys + metrics]
+        .groupby(keys, as_index=False)
+        .mean(numeric_only=True)
+        .rename(columns={m: f"{m}__none" for m in metrics})
+    )
+
+    plot_df = plot_df.merge(baseline, on=keys, how="left")
+
+    # 3) Compute per-metric differences for strategies != "None"
+    mask = plot_df["Strategy"].ne("None")
+    for m in metrics:
+        base_col = f"{m}__none"
+        diff_col = f"difference__{m}"
+        plot_df[diff_col] = np.where(
+            mask & plot_df[base_col].notna(),
+            (1/plot_df[r'$\beta$'])*(plot_df[m] - plot_df[base_col]),
+            np.nan
+        )
 
     FIGURE_SIZE = (3.2,2)
     fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)
