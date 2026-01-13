@@ -190,7 +190,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("file", type=str)
-    parser.add_argument("--collective", type=float)
     parser.add_argument("--fraction", type=float)
     args = parser.parse_args()
 
@@ -227,14 +226,14 @@ if __name__ == "__main__":
     plot_df = plot_df[(condition_1 | condition_2) & (condition_7 | condition_6)]
 
     plot_df["Strategy"] = plot_df["Strategy"].apply(lambda x: METHOD_DICTIONARY.get(x))
-    plot_df["Strategy"] = plot_df.apply(lambda x: x.Strategy+f" ($g={x.target_tag}$)" if x.Strategy == r'\texttt{Tag}' else x.Strategy, axis=1)
+    plot_df["Strategy"] = plot_df.apply(lambda x: x.Strategy+f"($g={x.target_tag}$)" if x.Strategy == r'\texttt{Tag}' else x.Strategy, axis=1)
 
     # --- Paired difference: Random vs Tag (g=34), matched on run_id, beta, x, tag ---
     metric = "avg_topk_rescaled"
     join_keys = ["run_id", r'$\beta$', X_AXIS_TEXT, "tag"]
 
-    random_label = r'\texttt{Random}'
-    tag_label    = r'\texttt{Tag} ($g=34$)'  # must match the label produced by your formatting
+    random_label = r'\texttt{Random}($\gamma$)'
+    tag_label    = r'\texttt{Tag}($g=34$)'  # must match the label produced by your formatting
 
     # Aggregate within each cell just in case you have duplicates (safer than assuming uniqueness)
     random_df = (
