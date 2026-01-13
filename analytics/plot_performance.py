@@ -160,6 +160,36 @@ if __name__ == "__main__":
     condition_2_2 = ((df['Report Fraction'] == 0.25) & (df['Report Strategy'] == "None") & df.Collective.isin([0]))
     condition_2 = (condition_2_1 | condition_2_2)
 
+    metrics = ["nDCG @ k", "Recall @ k"]
+    keys = ["run_id", X_AXIS_TEXT]  # add other columns if needed (e.g., your x-axis reduction column)
+
+    # baseline condition ("None" strategy rows)
+    baseline_cond = (
+        (df["Report Fraction"] == 0.25)
+        & (df["Report Strategy"] == "None")
+        & (df["Collective"].isin([0]))
+    )
+
+    baseline = (
+    df.loc[baseline_cond, keys + metrics]
+      .groupby(keys, as_index=False)
+      .mean(numeric_only=True)
+      .rename(columns={m: f"{m}__none" for m in metrics})
+)
+
+    df = df.merge(baseline, on=keys, how="left")
+
+    # 3) Compute per-metric differences for strategies != "None"
+    mask = df["Report Strategy"].ne("None")
+    for m in metrics:
+        base_col = f"{m}__none"
+        diff_col = f"difference__{m}"
+        df[diff_col] = np.where(
+            mask & df[base_col].notna(),
+            df[m] - df[base_col],
+            np.nan
+        )
+
     # Set the figure size and create subplots
     FIGURE_SIZE = (3.2,2)
     fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)
@@ -175,7 +205,7 @@ if __name__ == "__main__":
         hue_order = [r'\texttt{Low Risk}', r'\texttt{Likes}', r'\texttt{Top Ranker}', r'\texttt{Random}',
                      r'\texttt{Tag} ($g=39$)',
                      r'\texttt{Tag} ($g=67$)',
-                     r'\texttt{Tag} ($g=34$)', 'None'],
+                     r'\texttt{Tag} ($g=34$)'],
         ax=ax,
         legend=False
     )
@@ -191,7 +221,8 @@ if __name__ == "__main__":
     g = sns.lineplot(
         data=df[ condition_1 | condition_2 ], #df[(df.Strategy != "None") & (df["Risk Control"] != "None") & (df["Risk Control"] != r"\textsc{Harm}")],
         x=X_AXIS_TEXT,
-        y="nDCG @ k",
+        y="difference__nDCG @ k",
+        #y="nDCG @ k",
         hue="parsed_strategy",
         markers=True,
         dashes=False,
@@ -203,16 +234,17 @@ if __name__ == "__main__":
                      r'\texttt{Tag} ($g=34$)', 'None']
     )
     improve_legend(ax, save_legend=True)
+    ax.set_xscale('log')
     ax.set_ylabel(r"nDCG @ 20", fontsize="small")
     ax.set_xlabel(X_AXIS_TEXT, fontsize="small", loc="center")
-    fig.savefig("00_ndcg.pdf", format="pdf", bbox_inches='tight')
+    fig.savefig(f"00_ndcg_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
     plt.clf()
 
     fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)
     g = sns.lineplot(
         data=df[ condition_1 | condition_2 ], #df[(df.Strategy != "None") & (df["Risk Control"] != "None") & (df["Risk Control"] != r"\textsc{Harm}")],
         x=X_AXIS_TEXT,
-        y="Recall @ k",
+        y="difference__Recall @ k",
         hue="parsed_strategy",
         markers=True,
         legend=True,
@@ -226,7 +258,7 @@ if __name__ == "__main__":
     improve_legend(ax)
     ax.set_ylabel(r"Recall @ 20", fontsize="small")
     ax.set_xlabel(X_AXIS_TEXT, fontsize="small", loc="center")
-    plt.savefig("00_recall.pdf", format="pdf", bbox_inches='tight')
+    plt.savefig(f"00_recall_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
     plt.clf()
 
     fig, ax = plt.subplots(1,1, figsize=(4,2))

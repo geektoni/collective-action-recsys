@@ -15,7 +15,9 @@ sns.set_theme(font_scale=1.0,
         "text.usetex": True,
         'text.latex.preamble': r'\usepackage{amsfonts}',
         "font.family": "serif",
-    })
+    },
+    palette=sns.color_palette('colorblind')
+)
 
 def load_csv_files_to_dataframe_adv(directory, rescale=True):
     # List to store dataframes
@@ -182,7 +184,7 @@ if __name__ == "__main__":
     fig.savefig(f"01_strategies_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
     plt.clf()
 
-    fig, ax = plt.subplots(1,1, figsize=(4.2, 2))
+    fig, ax = plt.subplots(1,1, figsize=(3.2, 2))
     g = sns.barplot(
         data=dfb[ (condition_1 | condition_2) & condition_3 ],
         x='parsed_strategy',
@@ -201,7 +203,10 @@ if __name__ == "__main__":
     ax.set_ylabel(r'\% of reported items', fontsize="small", loc="center")
 
     labels = [tick.get_text() for tick in ax.get_xticklabels()]
-    labels[0] = r'\texttt{LowRisk}/\texttt{Likes}'+'\n'+r'\texttt{TopRanker}/\texttt{Random}'  # change first label
+    labels[0] = r'\texttt{Random}/\texttt{Likes}'+'\n'+r'\texttt{TopRanker}/\texttt{LowRisk}'  # change first label
+    labels[1] = r'$g=39$'
+    labels[2] = r'$g=34$'
+    labels[3] = r'$g=67$'
     ax.set_xticklabels(labels)
 
     fig.savefig(f"01_reported_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')

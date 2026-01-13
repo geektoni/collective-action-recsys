@@ -7,7 +7,9 @@ import argparse
 import matplotlib.lines as mlines
 import os
 
-from analytics.utils import METHOD_DICTIONARY
+from analytics.utils import METHOD_DICTIONARY, HUE_ORDER, HUE_ORDER_ONLY_SAMPLING
+import warnings
+warnings.filterwarnings("ignore")
 
 sns.set_theme(font_scale=1.0,
         style="ticks",
@@ -15,7 +17,9 @@ sns.set_theme(font_scale=1.0,
         "text.usetex": True,
         'text.latex.preamble': r'\usepackage{amsfonts}',
         "font.family": "serif",
-    })
+    },
+    palette=sns.color_palette('colorblind')
+)
 
 # Group by run_id to apply rescaling per cross-validation run
 def rescale_group(group, rescale=True, metrics=("nDCG @ k", "Recall @ k", "empr_harmfulness")):
@@ -110,7 +114,7 @@ def improve_legend(ax, custom_handles=[], additional_labels_to_remove=[], save_l
             loc="center",
             ncol=len(labels),  # Put all items in one row
             frameon=True,
-            fontsize="large"
+            #fontsize="large"
         )
         legend_fig.savefig(f"{legend_title}.pdf", bbox_inches='tight', pad_inches=0, format="pdf")
     
@@ -193,7 +197,7 @@ if __name__ == "__main__":
         diff_col = f"difference__{m}"
         df[diff_col] = np.where(
             mask & df[base_col].notna(),
-            (1/df["Collective"])*(df[m] - df[base_col]),
+            (1/df["Collective"])*(df[base_col]-df[m]), # we invert wrt the original formulation just for plotting ease
             np.nan
         )
     
@@ -208,41 +212,38 @@ if __name__ == "__main__":
         x=X_AXIS_TEXT,
         y="empr_harmfulness",
         hue="parsed_strategy",
+        style="parsed_strategy",
         markers=True,
         dashes=False,
         errorbar="sd",
-        hue_order = [r'\texttt{Low Risk}', r'\texttt{Likes}', r'\texttt{Top Ranker}', r'\texttt{Random}',
-                     r'\texttt{Tag} ($g=39$)',
-                     r'\texttt{Tag} ($g=67$)',
-                     r'\texttt{Tag} ($g=34$)', 'None'],
+        hue_order = HUE_ORDER + ['None'],
         ax=ax,
         legend=False
     )
     ax.grid(axis="y")
     ax.plot([0, 100], [0, 100], linestyle=':', color='black', label="Optim.")
     ax.set(ylim=(105, -5.0))
-    ax.set_ylabel(r"Empirical reduction (\%)", fontsize="small")
+    ax.set_ylabel(r"Empirical risk reduction (\%)", fontsize="small")
     ax.set_xlabel(X_AXIS_TEXT, fontsize="small", loc="center")
     fig.savefig(f"00_performance_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
     plt.clf()
 
     fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)
     g = sns.lineplot(
-        data=df[ (condition_1 | condition_2) & condition_3 ],
+        data=df[ (condition_1 | condition_2) & condition_3],
         x="Collective",
         y="difference__nDCG @ k",
         hue="parsed_strategy",
-        marker="o",
+        style="parsed_strategy",
+        markers=True,
         dashes=False,
         errorbar="ci",
         ax = ax,
-        hue_order=[r'\texttt{Low Risk}', r'\texttt{Likes}', r'\texttt{Top Ranker}', r'\texttt{Random}',
-                     r'\texttt{Tag} ($g=39$)',
-                     r'\texttt{Tag} ($g=67$)',
-                     r'\texttt{Tag} ($g=34$)']
+        hue_order = HUE_ORDER,
     )
-    improve_legend(ax, save_legend=True)
-    ax.set_ylabel(r"Reduction (nDCG @ 20)", fontsize="small")
+    improve_legend(ax, save_legend=True, legend_title="02_legend", additional_labels_to_remove=['None'])
+    ax.invert_yaxis()
+    ax.set_ylabel(r"Reduction", fontsize="small")
     ax.set_xlabel(r"$\beta$", fontsize="small", loc="center")
     fig.savefig(f"00_ndcg_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
     plt.clf()
@@ -253,17 +254,16 @@ if __name__ == "__main__":
         x="Collective",
         y="difference__Recall @ k",
         hue="parsed_strategy",
-        marker="o",
+        style="parsed_strategy",
+        markers=True,
         legend=True,
         dashes=False,
         errorbar="ci",
-        ax=ax, hue_order=[r'\texttt{Low Risk}', r'\texttt{Likes}', r'\texttt{Top Ranker}', r'\texttt{Random}',
-                     r'\texttt{Tag} ($g=39$)',
-                     r'\texttt{Tag} ($g=67$)',
-                     r'\texttt{Tag} ($g=34$)']
+        ax=ax, hue_order=HUE_ORDER
     )
     improve_legend(ax)
-    ax.set_ylabel(r"Reduction (Recall @ 20)", fontsize="small")
+    ax.invert_yaxis()
+    ax.set_ylabel(r"Reduction", fontsize="small")
     ax.set_xlabel(r"$\beta$", fontsize="small", loc="center")
     plt.savefig(f"00_recall_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
     plt.clf()
@@ -281,10 +281,7 @@ if __name__ == "__main__":
         errorbar="sd",
         err_kws={"linewidth": 1.2},
         capsize=.4,
-        ax=ax, hue_order=[r'\texttt{Low Risk}', r'\texttt{Likes}', r'\texttt{Top Ranker}', r'\texttt{Random}',
-                     r'\texttt{Tag} ($g=39$)',
-                     r'\texttt{Tag} ($g=67$)',
-                     r'\texttt{Tag} ($g=34$)', 'None']
+        ax=ax, hue_order=HUE_ORDER+['None']
     )
     improve_legend(ax, save_legend=False)
     ax.set_xlabel(X_AXIS_TEXT, fontsize="small", loc="center")
