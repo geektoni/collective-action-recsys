@@ -190,8 +190,6 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("file", type=str)
-    parser.add_argument("--collective", type=float)
-    parser.add_argument("--fraction", type=float)
     args = parser.parse_args()
 
     df = load_csv_files_to_dataframe_tag(args.file, rescale=True, n_jobs=4)
@@ -213,9 +211,6 @@ if __name__ == "__main__":
     plot_df['Group'] = plot_df['tag'].astype(str)
     plot_df["Strategy"].fillna('None', inplace=True)
 
-    # Condition 1: picks only elements of one collective
-    condition_1 = (plot_df['Report Fraction'].isin([args.fraction]))
-
     print(plot_df[r'$\beta$'].unique(), plot_df['Report Fraction'].unique(), plot_df['Strategy'].unique())
 
     # Condition 2: picks tags
@@ -227,7 +222,6 @@ if __name__ == "__main__":
     condition_6 = (plot_df['Strategy'] == "random")
     condition_7 = ((plot_df['Strategy'] == "tag") & (plot_df["target_tag"].isin(["34"])))
 
-    #plot_df = plot_df[(condition_1 | condition_2) & (condition_7 | condition_6)]
     plot_df = plot_df[(condition_2)]
 
     print(plot_df)
@@ -279,44 +273,10 @@ if __name__ == "__main__":
         errorbar="sd",
         hue_order=["54", "23"],
         ax = ax,
-        palette=sns.color_palette(palette='Accent')[4:]#sns.color_palette('colorblind')[10:]
+        palette=sns.color_palette(palette='Accent')[4:]
     )
-    #improve_legend(ax, save_legend=True, legend_title="tags_legend.pdf")
     ax.grid(axis='y')
     ax.invert_yaxis()
     ax.set_ylabel(r"$\Delta\mathrm{Reduction}$ (\%)", fontsize="small")
     ax.set_xlabel("Desired reduction in unwanted content (\%)", fontsize="small")
     fig.savefig("00_difference_based_on_tags.pdf", format="pdf", bbox_inches='tight')
-
-    exit()
-
-    sns.lineplot(
-        data=diff_df,
-        x=X_AXIS_TEXT,
-        y="difference__avg_topk_rescaled",
-        hue=r'$\beta$',
-        style=r'$\beta$',
-        estimator="mean",
-        errorbar="ci",
-        markers=True,
-        linewidth=1.5,
-        palette=sns.color_palette("crest", as_cmap=True),
-        ax=ax,
-    )
-    ax.grid(axis='y')
-    ax.legend(
-        title=r'$\beta$',
-        fontsize="small",
-        title_fontsize="small"
-    )
-
-    ax.axhline(0, linestyle="--", linewidth=1, color='k')
-
-    ax.set_ylabel(
-        r"$\Delta\mathrm{Exposure}$ (\%)",
-        fontsize="small",
-    )
-    ax.set_xlabel(X_AXIS_TEXT, fontsize="small")
-
-    #improve_legend(ax, save_legend=True, legend_title="02_tags_diff_legend")
-    fig.savefig(f"02_tags_34_classic.pdf", format="pdf", bbox_inches='tight')    
