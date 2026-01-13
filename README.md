@@ -4,11 +4,6 @@ This repository contains the full codebase used to run the experiments and gener
 Recommender Systems". 
 The structure is designed to separate experimental logic, evaluation utilities, and plotting scripts to facilitate reproducibility.
 
-All experiments rely on the same codebase and datasets as released at:  
-https://github.com/geektoni/mitigating-harm-recsys
-
-The data required to run the experiments can be obtained from the same repository.
-
 ---
 
 ## Repository Structure
@@ -58,28 +53,10 @@ Core library code used by all experiments.
 ### `scripts/`
 Shell scripts that automate experiments and figure generation.
 
-- `run_experiments.sh`  
-  Runs the full set of experiments used in the paper.
-
-- `generate_figure_1.sh`  
-- `generate_figure_2.sh`  
-- `generate_figure_4.sh`  
-- `generate_figure_5.sh`  
-
-Each script reproduces the results for the corresponding figure in the paper by calling the plotting scripts in `analytics/`. They have to be called after `run_experiments.sh`.  
-
 ---
 
 ### `analytics/`
 Plotting and analysis scripts used to generate the figures in the paper.
-
-- `plot_figure_1.py`
-- `plot_figure_2.py`
-- `plot_figure_4a.py`
-- `plot_figure_4b.py`
-- `plot_figure_5.py`
-
-Each script reads experiment outputs and produces publication-ready plots.
 
 ---
 
@@ -134,17 +111,7 @@ Each script reproduces the corresponding figure reported in the paper.
 
 ---
 
-## Reproducibility Notes
-
-- All random seeds are fixed where applicable.
-- Experiments were run using Python 3.10.
-- Results reported in the paper correspond to averages over multiple runs, as configured in the scripts.
-
----
-
 ## Acknowledgements
 
-The datasets and core experimental framework are derived from and shared with:  
+The datasets and core experimental framework are derived from:  
 https://github.com/geektoni/mitigating-harm-recsys
-
-This repository provides a self-contained and reproducible implementation of the methods evaluated in the paper.
