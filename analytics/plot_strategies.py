@@ -7,7 +7,7 @@ import argparse
 import matplotlib.lines as mlines
 import os
 
-from analytics.utils import METHOD_DICTIONARY
+from analytics.utils import METHOD_DICTIONARY, HUE_ORDER, HUE_ORDER_SHORT
 
 sns.set_theme(font_scale=1.0,
         style="ticks",
@@ -145,10 +145,13 @@ if __name__ == "__main__":
     dfb["parsed_strategy"] = dfb.apply(lambda x: x.parsed_strategy+f" ($g={x.target_tag}$)" if x.parsed_strategy == r'\texttt{Tag}' else x.parsed_strategy, axis=1)
 
     # Condition 1: picks only elements of one collective
-    condition_1 = (dfb.Collective.isin([args.collective])) & (dfb['Report Fraction'].isin([args.fraction]))
+    condition_1 = (dfb['Report Fraction'].isin([args.fraction]))
 
     # Condition 2: picks tags
-    condition_2 = ((dfb['Report Fraction'] == 0.25) & (dfb['Report Strategy'] == "tag") & dfb.Collective.isin([args.collective]))
+    condition_2 = (dfb['Report Fraction'] == 0.25) & (dfb['Report Strategy'] == "tag")
+
+    # Condition 3: picks the collective
+    condition_3 = dfb.Collective.isin([args.collective])
 
     # Set the figure size and create subplots
     FIGURE_SIZE = (3.2,2)
@@ -156,50 +159,49 @@ if __name__ == "__main__":
 
     #g = sns.relplot(
     g = sns.lineplot(
-        data=dfb[ condition_1 | condition_2 ],
-        #kind="line",
+        data=dfb[ (condition_1 | condition_2) & condition_3 ],
         x="gamma_bucket_center",
         y="avg_harm_adv_raw",
         hue="parsed_strategy",
+        style="parsed_strategy",
         markers=True,
         dashes=False,
         errorbar="sd",
-        hue_order = [r'\texttt{Low Risk}', r'\texttt{Likes}', r'\texttt{Top Ranker}', r'\texttt{Random}',
-                     r'\texttt{Tag} ($g=39$)',
-                     r'\texttt{Tag} ($g=67$)',
-                     r'\texttt{Tag} ($g=34$)'],
+        hue_order = HUE_ORDER,
         ax=ax
     )
-
+    # Show one marker every N points
+    N = 10
+    for line in ax.lines:
+        line.set_markevery(N)
     improve_legend(ax, save_legend=True)
 
-    ax.set_ylim(1e-5, 1.001)
-    ax.grid(axis='y')
     g.set(yscale="log")
-    ax.set_xlabel(r'$\lambda$')
-    ax.set_ylabel(r'Empirical Expected Risk')
-    plt.savefig(f"00_strategies_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
+    ax.set_xlabel(r'$\lambda$', fontsize="small", loc="center")
+    ax.set_ylabel(r'Empirical average risk', fontsize="small", loc="center")
+    fig.savefig(f"01_strategies_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
     plt.clf()
 
-    fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)
+    fig, ax = plt.subplots(1,1, figsize=(4.2, 2))
     g = sns.barplot(
-        data=dfb[ condition_1 | condition_2 ],
+        data=dfb[ (condition_1 | condition_2) & condition_3 ],
+        x='parsed_strategy',
         y="fraction_flagged",
         hue="parsed_strategy",
         errorbar="sd",
-        hue_order = [r'\texttt{Low Risk}', r'\texttt{Likes}', r'\texttt{Top Ranker}', r'\texttt{Random}',
-                     r'\texttt{Tag} ($g=39$)',
-                     r'\texttt{Tag} ($g=67$)',
-                     r'\texttt{Tag} ($g=34$)'],
+        err_kws={"linewidth": 1.2},
+        capsize=.4,
+        order=HUE_ORDER_SHORT,
+        hue_order = HUE_ORDER,
         ax=ax
     )
+    improve_legend(ax, save_legend=False)
+    ax.tick_params(axis='x', labelsize='x-small')
+    ax.set_xlabel('')
+    ax.set_ylabel(r'\% of reported items', fontsize="small", loc="center")
 
-    #improve_legend(ax, save_legend=True)
+    labels = [tick.get_text() for tick in ax.get_xticklabels()]
+    labels[0] = r'\texttt{LowRisk}/\texttt{Likes}'+'\n'+r'\texttt{TopRanker}/\texttt{Random}'  # change first label
+    ax.set_xticklabels(labels)
 
-    #ax.set_ylim(1e-5, 1.001)
-    ax.grid(axis='y')
-    #g.set(yscale="log")
-    #ax.set_xlabel(r'$\lambda$')
-    ax.set_ylabel(r'\% of reported items')
-
-    fig.savefig(f"00_reported_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
+    fig.savefig(f"01_reported_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')

@@ -7,3 +7,13 @@ METHOD_DICTIONARY = {
         "tag": r'\texttt{Tag}',
         "None": "None",
     }
+
+HUE_ORDER = [r'\texttt{Low Risk}', r'\texttt{Likes}', r'\texttt{Top Ranker}', r'\texttt{Random}',
+                     r'\texttt{Tag} ($g=39$)',
+                     r'\texttt{Tag} ($g=34$)',
+                     r'\texttt{Tag} ($g=67$)']
+
+HUE_ORDER_SHORT = [r'\texttt{Low Risk}',
+                     r'\texttt{Tag} ($g=39$)',
+                     r'\texttt{Tag} ($g=34$)',
+                     r'\texttt{Tag} ($g=67$)']
