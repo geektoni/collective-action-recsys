@@ -142,7 +142,7 @@ if __name__ == "__main__":
     dfb = bucketize_gamma_by_rank(df_adv, run_col="run_id", gamma_col="gamma", center_mode="bucket_midpoint")
 
     dfb["parsed_strategy"] = dfb["Report Strategy"].apply(lambda x: METHOD_DICTIONARY.get(x))
-    dfb["parsed_strategy"] = dfb.apply(lambda x: x.parsed_strategy+f" ($g={x.target_tag}$)" if x.parsed_strategy == r'\texttt{Tag}' else x.parsed_strategy, axis=1)
+    dfb["parsed_strategy"] = dfb.apply(lambda x: x.parsed_strategy+f"($g={x.target_tag}$)" if x.parsed_strategy == r'\texttt{Tag}' else x.parsed_strategy, axis=1)
 
     # Condition 1: picks only elements of one collective
     condition_1 = (dfb['Report Fraction'].isin([args.fraction]))
