@@ -1,4 +1,4 @@
-run_id,epoch,base_harm,beta,conformal_score,conformal_method,gamma,alpha,k,Method,Collective,Report Strategy,Report Fraction,likes_softmax_temperature,topk_n,None,avg_frequency_in_topk
+run_id,epoch,base_harm,beta,conformal_score,conformal_method,gamma,alpha,k,Method,Collective,Report Strategy,Report Fraction,likes_softmax_temperature,topk_n,tag,avg_frequency_in_topk
 0,100,0.3,0,Harm,hybrid,0.304011344909668,0.002376708259061,20,Conformal,0,None,0.25,1,0,26,0.012596553773024
 0,100,0.3,0,Harm,hybrid,0.304011344909668,0.002376708259061,20,Conformal,0,None,0.25,1,0,67,0.071182412358886
 0,100,0.3,0,Harm,hybrid,0.304011344909668,0.002376708259061,20,Conformal,0,None,0.25,1,0,12,0.068270944741535
