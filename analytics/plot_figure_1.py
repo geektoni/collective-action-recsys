@@ -170,6 +170,7 @@ if __name__ == "__main__":
         dashes=False,
         errorbar="sd",
         hue_order = HUE_ORDER,
+        style_order = HUE_ORDER,
         ax=ax
     )
     # Show one marker every N points
