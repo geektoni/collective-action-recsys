@@ -216,7 +216,8 @@ if __name__ == "__main__":
         markers=True,
         dashes=False,
         errorbar="sd",
-        hue_order = HUE_ORDER + ['None'],
+        hue_order = HUE_ORDER + [r'\texttt{None}'],
+        style_order = HUE_ORDER + [r'\texttt{None}'],
         ax=ax,
         legend=False
     )
@@ -225,7 +226,7 @@ if __name__ == "__main__":
     ax.set(ylim=(105, -5.0))
     ax.set_ylabel(r"Empirical risk reduction (\%)", fontsize="small")
     ax.set_xlabel(X_AXIS_TEXT, fontsize="small", loc="center")
-    fig.savefig(f"00_performance_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
+    fig.savefig(f"00_performance_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
     plt.clf()
 
     fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)
@@ -240,12 +241,13 @@ if __name__ == "__main__":
         errorbar="ci",
         ax = ax,
         hue_order = HUE_ORDER,
+        style_order = HUE_ORDER
     )
     improve_legend(ax, save_legend=True, legend_title="02_legend", additional_labels_to_remove=['None'])
     ax.invert_yaxis()
     ax.set_ylabel(r"Reduction", fontsize="small")
     ax.set_xlabel(r"$\beta$", fontsize="small", loc="center")
-    fig.savefig(f"00_ndcg_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
+    fig.savefig(f"00_ndcg_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
     plt.clf()
 
     fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)
@@ -259,13 +261,15 @@ if __name__ == "__main__":
         legend=True,
         dashes=False,
         errorbar="ci",
-        ax=ax, hue_order=HUE_ORDER
+        ax=ax,
+        hue_order=HUE_ORDER,
+        style_order=HUE_ORDER
     )
     improve_legend(ax)
     ax.invert_yaxis()
     ax.set_ylabel(r"Reduction", fontsize="small")
     ax.set_xlabel(r"$\beta$", fontsize="small", loc="center")
-    plt.savefig(f"00_recall_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
+    plt.savefig(f"00_recall_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
     plt.clf()
 
     fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)#(4.2,2))
@@ -281,10 +285,10 @@ if __name__ == "__main__":
         errorbar="sd",
         err_kws={"linewidth": 1.2},
         capsize=.4,
-        ax=ax, hue_order=HUE_ORDER+['None']
+        ax=ax, hue_order=HUE_ORDER+[r'\texttt{None}']
     )
-    improve_legend(ax, save_legend=False)
+    improve_legend(ax, save_legend=True)
     ax.set_xlabel(X_AXIS_TEXT, fontsize="small", loc="center")
     ax.set_ylabel(r"\% of previously seen items", fontsize="small")
-    fig.savefig(f"00_replacement_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
+    fig.savefig(f"00_replacement_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
     plt.clf()
