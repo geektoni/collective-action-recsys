@@ -17,6 +17,14 @@ sns.set_theme(font_scale=1.0,
         "font.family": "serif",
     })
 
+def get_global_score_range(scores_by_user: dict) -> tuple[float, float]:
+    vals = []
+    for items in scores_by_user.values():
+        if isinstance(items, dict):
+            vals.extend(items.values())
+    vals = np.asarray(vals, dtype=float)
+    return float(vals.min()), float(vals.max())
+
 def load_calibration_txt(path: str) -> pd.DataFrame:
     df = pd.read_table(
         path,
@@ -51,17 +59,23 @@ def load_calibration_txt(path: str) -> pd.DataFrame:
     return df
 
 
-def scores_dict_to_long(scores_by_user: dict) -> pd.DataFrame:
+def scores_dict_to_long(scores_by_user: dict, *, smin: float, smax: float) -> pd.DataFrame:
     """
-    scores_by_user structure:
-      { user_id: {item_id: score, item_id2: score2, ...}, user_id2: ... }
+    Min-max normalize scores to [0, 1]:
+      score_norm = (score - smin) / (smax - smin)
     """
+    denom = smax - smin
+    if denom <= 0:
+        raise ValueError("Invalid score range for normalization")
+
     rows = []
     for uid, items in scores_by_user.items():
         if not isinstance(items, dict):
             continue
         for vid, score in items.items():
-            rows.append((int(uid), int(vid), float(score)))
+            score = (float(score) - smin) / denom
+            rows.append((int(uid), int(vid), score))
+
     return pd.DataFrame(rows, columns=["user_id", "video_id", "score"])
 
 
@@ -71,7 +85,8 @@ def compute_tag_stats(calib_df: pd.DataFrame, scores_by_user: dict) -> tuple[pd.
       tag_summary_df with columns: tag, n, hate_fraction, score_mean, score_std, score_q*
       tag_to_scores: dict[tag] -> np.ndarray of scores
     """
-    scores_long = scores_dict_to_long(scores_by_user)
+    smin, smax = get_global_score_range(scores_by_user)
+    scores_long = scores_dict_to_long(scores_by_user, smin=smin, smax=smax)
     merged = calib_df.merge(scores_long, on=["user_id", "video_id"], how="inner")
 
     # collect distributions
@@ -290,7 +305,7 @@ def check_and_plot_avg_score_disparities(
 
 if __name__ == "__main__":
 
-    with open("../methods/kuairand/results/test_0_lightgcl_False_0.3_100.zlib.pickle", "rb") as f:
+    with open("methods/kuairand/results/test_0_lightgcl_False_0.3_100.zlib.pickle", "rb") as f:
         compressed_data = f.read()
 
     # Decompress with zlib
@@ -299,7 +314,7 @@ if __name__ == "__main__":
     # Unpickle the object
     obj = pickle.loads(pickled_data)
 
-    calib = load_calibration_txt("../methods/kuairand/training/test_calibration_0_False_0.3.txt")
+    calib = load_calibration_txt("methods/kuairand/training/test_calibration_0_False_0.3.txt")
     tag_summary, tag_to_scores = compute_tag_stats(calib, obj)
 
     # Save or inspect per-tag stats
