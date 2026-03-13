@@ -112,7 +112,7 @@ def improve_legend(ax, custom_handles=[], additional_labels_to_remove=[], save_l
             new_handles,
             new_labels,
             loc="center",
-            ncol=len(labels),  # Put all items in one row
+            ncol=4,#len(labels),  # Put all items in one row
             frameon=True,
             #fontsize="large"
         )
@@ -205,7 +205,7 @@ if __name__ == "__main__":
 
     # Set the figure size and create subplots
     FIGURE_SIZE = (3.2,2)
-    fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)
+    fig, ax = plt.subplots(1,1, figsize=(4.2,2))
 
     g = sns.lineplot(
         data=df[ ((condition_1 | condition_2) & condition_4) | condition_2_2 ],
@@ -272,7 +272,7 @@ if __name__ == "__main__":
     plt.savefig(f"00_recall_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
     plt.clf()
 
-    fig, ax = plt.subplots(1,1, figsize=FIGURE_SIZE)#(4.2,2))
+    fig, ax = plt.subplots(1,1, figsize=(4.2,2))
     tmp = df[ (condition_1 | condition_2) & ( condition_4 | condition_2_2) ]
     tmp = tmp[tmp[X_AXIS_TEXT].isin([12.5, 25, 50, 75])]
     tmp["fraction"] = 100*tmp[r"\# of replaced items"]/tmp[r"$|S_\lambda(U)|$"]

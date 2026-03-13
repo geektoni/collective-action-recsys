@@ -121,8 +121,9 @@ def improve_legend(ax, custom_handles=[], additional_labels_to_remove=[], save_l
             new_handles,
             new_labels,
             loc="center",
-            ncol=len(labels),  # Put all items in one row
+            ncol=4,#len(labels),  # Put all items in one row
             frameon=True,
+            columnspacing=1.0
         )
         legend_fig.savefig("legend_only.pdf", bbox_inches='tight', pad_inches=0, format="pdf")
     
@@ -185,7 +186,7 @@ if __name__ == "__main__":
     fig.savefig(f"01_strategies_{args.collective}_{args.fraction}.pdf", format="pdf", bbox_inches='tight')
     plt.clf()
 
-    fig, ax = plt.subplots(1,1, figsize=(3.2, 2))
+    fig, ax = plt.subplots(1,1, figsize=(4.2, 2))
     g = sns.barplot(
         data=dfb[ (condition_1 | condition_2) & condition_3 ],
         x='parsed_strategy',
