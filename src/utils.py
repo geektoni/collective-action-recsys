@@ -162,9 +162,9 @@ def process_user_only_model(user_ids_chunk, user_ids, item_ids, pred_ratings, tr
         )
         
         if return_recommendations:
-            results.append((size_of_recommendation, loss_value, ndcg_no_gamma_value, recall_per_user, recommended_items_ids_for_user[:k]))
+            results.append((user_id, size_of_recommendation, loss_value, ndcg_no_gamma_value, recall_per_user, recommended_items_ids_for_user[:k]))
         else:
-            results.append((size_of_recommendation, loss_value, ndcg_no_gamma_value, recall_per_user))
+            results.append((user_id, size_of_recommendation, loss_value, ndcg_no_gamma_value, recall_per_user))
     
     return results
 

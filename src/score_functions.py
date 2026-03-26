@@ -173,6 +173,7 @@ class HarmScoreMethod(NaiveScoreMethod):
     def replace_low_scores(self, scores, user_id, k, threshold, **kwargs):
 
         is_calibrating = kwargs.get("is_calibrating", False)
+        sampled_idx = kwargs.get("sampled_idx", None) # Specify only a subset of items
         
         if is_calibrating:
             # Extract the harmfulness predictions of only such items
@@ -184,12 +185,13 @@ class HarmScoreMethod(NaiveScoreMethod):
             updated_predictions = self.harmfulness_items_scores[mask_ids]
 
         return super().replace_low_scores(scores, user_id, k, threshold,
-                                          updated_scores=updated_predictions, **kwargs)
+                                          updated_scores=updated_predictions if sampled_idx is None else updated_predictions[sampled_idx], **kwargs)
 
     def score_items(self, predictions, gamma, **kwargs):
         
         user_id = kwargs.get("user_id")
         is_calibrating = kwargs.get("is_calibrating", False)
+        sampled_idx = kwargs.get("sampled_idx", None) # Specify only a subset of items
         
         if is_calibrating:
             # Extract the harmfulness predictions of only such items
@@ -200,4 +202,4 @@ class HarmScoreMethod(NaiveScoreMethod):
             mask_ids = self.test_user_ids == user_id
             updated_predictions = self.harmfulness_items_scores[mask_ids]
         
-        return super().score_items(updated_predictions, gamma)
+        return super().score_items(updated_predictions if sampled_idx is None else updated_predictions[sampled_idx], gamma)
