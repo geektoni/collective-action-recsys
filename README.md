@@ -1,117 +1,49 @@
-# Reproducibility Package
+# With a Little Help From My Friends: Collective Manipulation in Risk-Controlling Recommender Systems
 
-This repository contains the full codebase used to run the experiments and generate the figures reported in the paper "With a Little Help from My Friends: Collective Manipulation in Risk-Controlling
-Recommender Systems". 
-The structure is designed to separate experimental logic, evaluation utilities, and plotting scripts to facilitate reproducibility.
-
----
-
-## Repository Structure
-
-```
-.
-├── ranker_kuairand.py
-├── requirements.txt
-├── scripts/
-├── src/
-└── analytics/
-```
-
-### `ranker_kuairand.py`
-Main entry point for running recommendation experiments.
-
-This script:
-- Loads the datasets
-- Runs ranking and mitigation methods
-- Applies different harm-aware scoring strategies
-- Produces intermediate result files used for plotting
-
-It supports multiple experimental configurations via command-line arguments (e.g., number of runs, epochs, scoring method, mitigation strategy).
-
----
-
-### `src/`
-Core library code used by all experiments.
-
-- `datasets.py`  
-  Dataset loading and preprocessing utilities.
-
-- `utils.py`  
-  Helper functions for user processing, prediction handling, and experiment orchestration.
-
-- `score_functions.py`  
-  Implementation of the different scoring and ranking functions used in the experiments.
-
-- `calibration.py`  
-  Harm calibration procedures and metrics used for mitigation.
-
-- `evaluate_model.py`  
-  Evaluation logic for computing performance and harm-related metrics.
-
----
-
-### `scripts/`
-Shell scripts that automate experiments and figure generation.
-
----
-
-### `analytics/`
-Plotting and analysis scripts used to generate the figures in the paper.
-
----
+This repository contains the full codebase used to run the experiments and generate the figures reported in the paper "With a Little Help from My Friends: Collective Manipulation in Risk-Controlling Recommender Systems". The structure is designed to separate experimental logic, evaluation utilities, and plotting scripts to facilitate reproducibility.
 
 ## Installation
 
-We recommend using a virtual environment.
-
 ```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+conda create --name adv-coll-recsys python=3.10
+conda activate adv-coll-recsys
+pip install -r requirement.txt
 ```
 
----
+## Reproduce our results
 
-## Data
-
-The datasets required to run the experiments are **not included** in this repository.
-
-They can be downloaded from:
-
-https://github.com/geektoni/mitigating-harm-recsys
-
-Please follow the instructions in that repository to obtain and place the data in the expected directory structure before running the experiments.
-
----
-
-## Running the Experiments
-
-To reproduce all experimental results:
+We directly provide the results of the various experiments and ablations (Section 6 and 7) in the directory `results`. You can use the following scripts to re-generate the plots within the paper.
 
 ```bash
-bash scripts/run_experiments.sh
-```
+conda activate adv-coll-recsys
 
-This will generate all intermediate outputs required for plotting.
-
----
-
-## Generating Figures
-
-After running the experiments, figures can be generated individually:
-
-```bash
 bash scripts/generate_figure_1.sh
 bash scripts/generate_figure_2.sh
 bash scripts/generate_figure_4.sh
 bash scripts/generate_figure_5.sh
+bash scripts/generate_figure_6.sh
 ```
 
-Each script reproduces the corresponding figure reported in the paper.
+If you want to replicate in full our experiments, then please do the following:
 
----
+### Download the data Data
 
-## Acknowledgements
+The datasets required to run the experiments are **not included** in this repository. They can be downloaded from https://github.com/geektoni/mitigating-harm-recsys/tree/master/methods/kuairand/results. Please place the resulting `*.pickle` within `methods/kuairand/results` in the current repository.
 
-The datasets and core experimental framework are derived from:  
-https://github.com/geektoni/mitigating-harm-recsys
+### Running the Experiments
+
+To run all the evaluations with the same configuration we used within our experiments, please use the following scripts:
+
+```bash
+conda activate adv-coll-recsys
+export PYTHONPATH=.
+
+bash scripts/run_experiments.sh
+bash scripts/run_experiments_individualized.sh
+```
+
+This will generate all intermediate outputs required for plotting.
+
+## Acknowledgments
+
+The datasets and core experimental framework are derived from https://github.com/geektoni/mitigating-harm-recsys.
